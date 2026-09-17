@@ -16,12 +16,14 @@ interface ProcedureFormState {
   name: string;
   requirements: string;
   dailyQuota: string;
+  available: boolean;
 }
 
 const emptyForm: ProcedureFormState = {
   name: '',
   requirements: '',
   dailyQuota: '',
+  available: true,
 };
 
 export default function CatalogPage() {
@@ -66,6 +68,7 @@ export default function CatalogPage() {
       .map((requirement) => requirement.trim())
       .filter(Boolean),
     dailyQuota: form.dailyQuota ? Number(form.dailyQuota) : null,
+    available: form.available,
   });
 
   const saveProcedure = async (event: FormEvent<HTMLFormElement>) => {
@@ -115,6 +118,7 @@ export default function CatalogPage() {
         procedure.dailyQuota === null || procedure.dailyQuota === undefined
           ? ''
           : String(procedure.dailyQuota),
+      available: procedure.available ?? true,
     });
   };
 
@@ -174,6 +178,21 @@ export default function CatalogPage() {
                 type="number"
                 value={form.dailyQuota}
               />
+            </label>
+            <label>
+              <span>Disponibilidad</span>
+              <select
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    available: event.target.value === 'true',
+                  }))
+                }
+                value={String(form.available)}
+              >
+                <option value="true">Disponible</option>
+                <option value="false">No disponible</option>
+              </select>
             </label>
           </div>
           {formError ? <p className="form-error">{formError}</p> : null}
@@ -262,4 +281,3 @@ export default function CatalogPage() {
     </section>
   );
 }
-

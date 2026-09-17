@@ -11,5 +11,5 @@ export interface UpsertProcedurePayload {
   name: string;
   requirements: string[];
   dailyQuota?: number | null;
-  available?: boolean | null;
+  available: boolean;
 }
