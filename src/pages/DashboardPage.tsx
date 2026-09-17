@@ -123,7 +123,7 @@ export default function DashboardPage() {
   }
 
   const cards = getCardsByRole(profile.primaryRole);
-  const canCreateRequest = hasAnyRole(roles, ['Cliente', 'Admin']);
+  const canCreateRequest = hasAnyRole(roles, ['Cliente', 'Operador', 'Admin']);
 
   return (
     <section className="page-stack">
@@ -170,3 +170,4 @@ export default function DashboardPage() {
     </section>
   );
 }
+

@@ -23,7 +23,7 @@ export default function RequestsPage() {
   const [error, setError] = useState('');
   const [catalogError, setCatalogError] = useState('');
   const [success, setSuccess] = useState('');
-  const canCreate = hasAnyRole(roles, ['Cliente', 'Admin']);
+  const canCreate = hasAnyRole(roles, ['Cliente', 'Operador', 'Admin']);
 
   const loadRequests = useCallback(async () => {
     setIsLoading(true);
@@ -124,5 +124,6 @@ export default function RequestsPage() {
     </section>
   );
 }
+
 
 
