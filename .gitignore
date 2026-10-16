@@ -28,3 +28,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Private deployment material: templates are tracked, real credentials never are.
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+.erlang.cookie
+*.erlang.cookie
+secrets/
