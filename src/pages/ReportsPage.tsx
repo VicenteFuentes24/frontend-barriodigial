@@ -1,143 +1,118 @@
 import { RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorState from '../components/ui/ErrorState';
 import LoadingState from '../components/ui/LoadingState';
 import PageHeader from '../components/ui/PageHeader';
-import { getApiErrorMessage } from '../services/apiClient';
+import StatusBadge from '../components/ui/StatusBadge';
+import { useReportQuery } from '../hooks/useReportQuery';
 import { reportService } from '../services/reportService';
-import type { ReportKpis, TopProcedure } from '../types/report';
+import type { KpiRange, ReportTimeRange } from '../types/report';
 import { formatNumber } from '../utils/format';
+import { activeRequests, formatReportInstant, formatResolution, hourlySeries, kpiRangeLabels, statusSeries } from '../utils/report';
+
+const loadHours = (signal: AbortSignal) => reportService.getRequestsByHour('last24h', signal);
+const loadTop = (signal: AbortSignal) => reportService.getTopProcedures('last7d', signal);
+
+function QueryContent<T>({ query, children }: {
+  query: { loading: boolean; error: string | null; data: T | null; retry: () => void };
+  children: (data: T) => ReactNode;
+}) {
+  if (query.loading) return <LoadingState message="Cargando estadísticas..." />;
+  if (query.error) return <div role="alert"><ErrorState title="No se pudo cargar esta sección" message={query.error} onRetry={query.retry} /></div>;
+  return query.data === null ? null : children(query.data);
+}
+
+function ReportWindow({ range }: { range: ReportTimeRange }) {
+  return <p className="report-period">Desde {formatReportInstant(range.from)} hasta {formatReportInstant(range.to)}. Hora de Santiago.</p>;
+}
 
 export default function ReportsPage() {
-  const [kpis, setKpis] = useState<ReportKpis | null>(null);
-  const [topProcedures, setTopProcedures] = useState<TopProcedure[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const loadReports = useCallback(async () => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const [kpiResponse, topResponse] = await Promise.all([
-        reportService.getKpis('last24h'),
-        reportService.getTopProcedures('last7d'),
-      ]);
-      setKpis(kpiResponse);
-      setTopProcedures(topResponse);
-    } catch (loadError) {
-      setKpis(null);
-      setTopProcedures([]);
-      setError(
-        getApiErrorMessage(
-          loadError,
-          'Los datos de reportería estarán disponibles cuando el servicio esté conectado.',
-        ),
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadReports();
-  }, [loadReports]);
+  const [range, setRange] = useState<KpiRange>('last24h');
+  const [refresh, setRefresh] = useState(0);
+  const loadKpis = useCallback((signal: AbortSignal) => reportService.getKpis(range, signal), [range]);
+  const kpis = useReportQuery(`${range}:${refresh}`, loadKpis);
+  const hours = useReportQuery(`hours:${refresh}`, loadHours);
+  const top = useReportQuery(`top:${refresh}`, loadTop);
+  const loading = kpis.loading || hours.loading || top.loading;
 
   return (
     <section className="page-stack">
-      <PageHeader
-        title="Reportería"
-        description="Panel preparado para KPIs y rankings reales del backend."
-        actions={
-          <Button onClick={loadReports} variant="secondary">
-            <RefreshCw size={18} aria-hidden="true" />
-            Actualizar
-          </Button>
-        }
-      />
-
-      {isLoading ? <LoadingState message="Cargando reportería..." /> : null}
-      {!isLoading && error ? (
-        <ErrorState
-          message="Los datos de reportería estarán disponibles cuando el servicio esté conectado."
-          onRetry={loadReports}
-          title={error}
-        />
-      ) : null}
-
-      {!isLoading && !error ? (
-        <>
+      <PageHeader title="Reportería" description="Indicadores de gestión de solicitudes municipales."
+        actions={<Button onClick={() => setRefresh((value) => value + 1)} disabled={loading} variant="secondary">
+          <RefreshCw size={18} aria-hidden="true" />Actualizar
+        </Button>} />
+      <div className="report-filter">
+        <label htmlFor="report-range">Período de indicadores</label>
+        <select id="report-range" value={range} onChange={(event) => setRange(event.target.value as KpiRange)}>
+          <option value="last24h">Últimas 24 horas</option><option value="last7d">Últimos 7 días</option>
+        </select>
+      </div>
+      <section className="page-stack" aria-labelledby="report-kpis" aria-busy={kpis.loading}>
+        <div>
+          <h2 id="report-kpis">Indicadores · {kpiRangeLabels[range]}</h2>
+          <p className="report-period">Solicitudes creadas en el período, según su estado actual. El tiempo promedio corresponde a las resueltas de ese conjunto.</p>
+        </div>
+        <QueryContent query={kpis}>{(data) => <>
+          <ReportWindow range={data.range} />
           <div className="metric-grid">
-            <article className="metric-card">
-              <span>Trámites activos</span>
-              <strong>{formatNumber(kpis?.activeRequests)}</strong>
-              <p>GET /api/report/kpis?range=last24h</p>
+            <article className="metric-card" aria-label="Total de trámites">
+              <span>Total de trámites</span><strong>{formatNumber(data.totalRequests)}</strong><p>{kpiRangeLabels[range]}</p>
             </article>
-            <article className="metric-card">
-              <span>Trámites resueltos</span>
-              <strong>{formatNumber(kpis?.resolvedRequests)}</strong>
-              <p>GET /api/report/kpis?range=last24h</p>
+            <article className="metric-card" aria-label="Trámites activos">
+              <span>Trámites activos</span><strong>{formatNumber(activeRequests(data))}</strong><p>{kpiRangeLabels[range]}</p>
             </article>
-            <article className="metric-card">
-              <span>Tiempo de resolución</span>
-              <strong>{kpis?.averageResolutionTime ?? '---'}</strong>
-              <p>Sin datos inventados.</p>
+            <article className="metric-card" aria-label="Trámites resueltos">
+              <span>Trámites resueltos</span><strong>{formatNumber(data.resolvedRequests)}</strong><p>{kpiRangeLabels[range]}</p>
+            </article>
+            <article className="metric-card" aria-label="Tiempo de resolución">
+              <span>Tiempo de resolución</span><strong className={data.averageResolutionSeconds === null ? 'report-resolution-empty' : undefined}>{formatResolution(data.averageResolutionSeconds)}</strong><p>{kpiRangeLabels[range]}</p>
             </article>
           </div>
-
-          <div className="report-grid">
-            <section className="detail-panel">
-              <h2>Trámites por hora</h2>
-              {kpis?.hourlyRequests && kpis.hourlyRequests.length > 0 ? (
-                <ul className="compact-list">
-                  {kpis.hourlyRequests.map((item) => (
-                    <li key={item.label}>
-                      <span>{item.label}</span>
-                      <strong>{formatNumber(item.value)}</strong>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyState title="Sin información disponible." />
-              )}
-            </section>
-
-            <section className="detail-panel">
-              <h2>Estados activos</h2>
-              {kpis?.activeStatuses && kpis.activeStatuses.length > 0 ? (
-                <ul className="compact-list">
-                  {kpis.activeStatuses.map((item) => (
-                    <li key={item.label}>
-                      <span>{item.label}</span>
-                      <strong>{formatNumber(item.value)}</strong>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyState title="Sin información disponible." />
-              )}
-            </section>
-
-            <section className="detail-panel detail-panel-wide">
-              <h2>Trámites más demandados</h2>
-              {topProcedures.length > 0 ? (
-                <ul className="compact-list">
-                  {topProcedures.map((procedure) => (
-                    <li key={procedure.procedureId ?? procedure.procedureName}>
-                      <span>{procedure.procedureName}</span>
-                      <strong>{formatNumber(procedure.total)}</strong>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyState title="Sin información disponible." />
-              )}
-            </section>
-          </div>
-        </>
-      ) : null}
+        </>}</QueryContent>
+      </section>
+      <div className="report-grid">
+        <section className="detail-panel" aria-labelledby="report-hours" aria-busy={hours.loading}>
+          <h2 id="report-hours">Trámites por hora</h2>
+          <p className="report-period">Últimas 24 horas · Hora de Santiago. Solo se muestran las horas informadas por el servicio.</p>
+          <QueryContent query={hours}>{(data) => <>
+            <ReportWindow range={data.range} />
+            {data.hours.length === 0 ? <EmptyState title="Sin solicitudes creadas en las últimas 24 horas." /> :
+              <ul className="compact-list report-hours">
+                {hourlySeries(data).map((item) => <li key={item.hour}>
+                  <time dateTime={item.hour}>{formatReportInstant(item.hour)}</time>
+                  <strong aria-label={`${item.totalRequests} solicitudes`}>{formatNumber(item.totalRequests)}</strong>
+                </li>)}
+              </ul>}
+          </>}</QueryContent>
+        </section>
+        <section className="detail-panel" aria-labelledby="report-statuses" aria-busy={kpis.loading}>
+          <h2 id="report-statuses">Estados de los trámites</h2>
+          <p className="report-period">{kpiRangeLabels[range]} · Los cuatro primeros estados corresponden a trámites activos.</p>
+          <QueryContent query={kpis}>{(data) => data.totalRequests === 0 ? <EmptyState title="Sin solicitudes creadas en este período." /> :
+            <ul className="compact-list report-statuses">
+              {statusSeries(data).map((item) => <li key={item.status}>
+                <div className="report-status-label"><StatusBadge status={item.status} /><strong>{formatNumber(item.count)}</strong></div>
+                <div className="report-bar-track" aria-hidden="true"><span className={item.active ? 'report-bar-active' : 'report-bar-final'} style={{ width: `${item.count / Math.max(data.totalRequests, 1) * 100}%` }} /></div>
+              </li>)}
+            </ul>}
+          </QueryContent>
+        </section>
+        <section className="detail-panel detail-panel-wide" aria-labelledby="report-top" aria-busy={top.loading}>
+          <h2 id="report-top">Trámites más demandados</h2>
+          <p className="report-period">Últimos 7 días</p>
+          <QueryContent query={top}>{(data) => <>
+            <ReportWindow range={data.range} />
+            {data.procedures.length === 0 ? <EmptyState title="Sin solicitudes para mostrar en los últimos siete días." /> :
+              <ul className="compact-list">
+                {data.procedures.map((procedure) => <li key={procedure.procedureId}>
+                  <span>{procedure.procedureName}</span><strong aria-label={`${procedure.totalRequests} solicitudes`}>{formatNumber(procedure.totalRequests)}</strong>
+                </li>)}
+              </ul>}
+          </>}</QueryContent>
+        </section>
+      </div>
     </section>
   );
 }

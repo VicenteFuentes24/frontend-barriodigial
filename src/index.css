@@ -225,6 +225,20 @@ label span { color: #334155; font-size: 0.88rem; font-weight: 700; }
 .center-page { align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: grid; gap: 0.9rem; justify-items: center; margin: 3rem auto; max-width: 32rem; padding: 2rem; text-align: center; }
 .center-page svg { color: var(--primary); }
 
+.report-filter { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+.report-filter label { font-weight: 600; }
+.report-filter select { width: auto; max-width: 100%; }
+.report-period { color: var(--muted); font-size: 0.875rem; margin: 0; line-height: 1.6; }
+.metric-card .report-resolution-empty { font-size: 1.15rem; line-height: 1.5; }
+.report-hours { max-height: 28rem; overflow-y: auto; }
+.report-hours li { gap: 1rem; }
+.report-statuses li { display: grid; gap: 0.6rem; }
+.report-status-label { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.report-bar-track { height: 0.5rem; border-radius: 4px; overflow: hidden; background: #e2e8f0; }
+.report-bar-track span { display: block; height: 100%; }
+.report-bar-active { background: var(--primary); }
+.report-bar-final { background: #2563eb; }
+
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 900px) {

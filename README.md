@@ -48,6 +48,7 @@ Por defecto Vite levanta la aplicación en `http://localhost:5173`.
 
 ```bash
 npm run lint
+npm test
 npm run build
 ```
 
@@ -59,7 +60,7 @@ npm run build
 | `/requests` | Admin, Operador, Cliente | Listado y gestión de trámites |
 | `/requests/:id` | Admin, Operador, Cliente | Detalle del trámite |
 | `/catalog` | Admin, Operador | Consulta del catálogo; Admin puede editar |
-| `/reports` | Admin | Vista preparada para reportería |
+| `/reports` | Admin | KPIs, estados, solicitudes por hora y procedimientos más demandados desde Report vía BFF |
 | `/audit` | Admin, Auditor | Vista preparada para auditoría |
 
 ## Funcionalidades implementadas
@@ -88,6 +89,8 @@ npm run build
 
 ## Estructura principal
 
+La integración de Reportería, sus contratos, pruebas y verificación local están documentados en [README-Report.md](README-Report.md).
+
 ```text
 src/
 ├── auth/          # configuración MSAL, perfil y guards
@@ -110,7 +113,7 @@ AWS API Gateway
    v
 ms-barriodigital-bff
    v
-Requests / Catalog
+Requests / Catalog / Report
 ```
 
 El frontend no llama directamente a los microservicios internos.
