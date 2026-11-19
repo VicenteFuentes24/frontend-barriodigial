@@ -62,32 +62,9 @@ La comprobación visual no pudo completarse: Computer Use detuvo la inspección 
 
 La instalación de herramientas de pruebas informó dos dependencias de desarrollo con avisos de seguridad (`vite@8.3.0` y `source-map-js@1.2.1`); `npm audit --json` lo confirmó. Ambas versiones ya estaban en el lockfile anterior. No se ejecutó `npm audit fix` ni se actualizaron dependencias existentes fuera del alcance. Queda pendiente revisar esos parches de desarrollo. La advertencia de tamaño del bundle tampoco impide compilar; una optimización de carga puede abordarse por separado.
 
-## Prueba local con Admin
+## Comprobación en Amplify con Admin
 
-Requisitos: BFF funcionando en `http://localhost:8080`, Report en `http://localhost:8083`, infraestructura y proyección operativas, y las variables Entra existentes configuradas. No es necesario agregar nuevas variables. La aplicación usa `VITE_AZURE_TENANT_ID`, `VITE_AZURE_CLIENT_ID`, `VITE_AZURE_API_SCOPE`, `VITE_AZURE_REDIRECT_URI` y `VITE_API_BASE_URL`. Conservar sus valores existentes y el scope `access_as_user`. No imprimir tokens ni incluir credenciales en el repositorio.
-
-Desde PowerShell:
-
-```powershell
-Set-Location 'G:\Desarrollo EP3-EP4\frontend-barriodigital'
-# Si todavía no están instaladas las dependencias del lockfile:
-npm ci
-npm test
-npm run lint
-npm run build
-# Solo sobrescribe la URL pública del BFF para esta sesión; conserva Entra.
-$env:VITE_API_BASE_URL = 'http://localhost:8080'
-npm run dev -- --host localhost --port 5173 --strictPort
-```
-
-Si Vite ya está ejecutándose en 5173, utilizar esa instancia con su configuración correcta. Reiniciar Vite al cambiar variables de entorno; no iniciar una segunda instancia en otro puerto para eludir un puerto ocupado.
-
-1. Abrir `http://localhost:5173`, iniciar sesión por el flujo existente con una cuenta Admin y entrar a Reportería (`/reports`).
-2. Comprobar que las tres consultas terminan y muestran datos o estados vacíos legítimos. Cero solicitudes debe verse como `0`; duración nula como «Sin solicitudes resueltas».
-3. En DevTools, revisar solo URL, estado y cuerpo de las respuestas de Report. Deben ir a `localhost:8080/api/report/...`, nunca a 8083. No copiar, registrar ni compartir cabeceras Authorization, tokens, HAR o capturas con datos sensibles.
-4. Comparar total/resueltos con los campos homónimos; sumar los cuatro estados activos. Contrastar ranking y horas con los arrays de cada respuesta, sin exigir que coincidan totales de períodos distintos.
-5. Elegir «Últimos 7 días». Solo KPIs/estados deben cambiar de período; horas sigue en 24 horas y ranking en siete días. Pulsar Actualizar y comprobar que el selector conserva siete días.
-6. Verificar nombres y fechas, legibilidad con teclado y en vista móvil. Usar una cuenta Operador o Cliente solo si está disponible: Reportería no debe aparecer en navegación y `/reports` debe ser rechazado por el guard; el BFF sigue siendo la autoridad real.
-7. Las pruebas automatizadas cubren errores y carreras sin detener servicios reales. No detener Kafka, alterar datos ni desactivar seguridad para provocar fallos manualmente.
-
-La pantalla está conectada a datos persistidos de Report; la actualización de la proyección depende del consumo Kafka y puede ser eventual. Esta tarea no modifica Auditoría ni agrega otros indicadores al Dashboard general.
+Abrir `/reports` en la URL de Amplify ya registrada como SPA de Entra e iniciar
+sesión con una cuenta Admin existente. Comprobar la carga de los indicadores y
+los filtros. Las peticiones deben aparecer bajo `/api/report/…` en API Gateway.
+Para el build y la reescritura SPA, consultar la [guía AWS](README.AWS.md).

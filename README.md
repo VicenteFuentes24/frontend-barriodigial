@@ -21,28 +21,16 @@ Frontend web de BarrioDigital. Permite autenticarse con Microsoft Entra ID media
 
 La autorización real no depende del frontend: las reglas de acceso se aplican nuevamente en el BFF.
 
-## Variables de entorno
+## Configuración de Amplify
 
-Crear un archivo `.env` a partir de `.env.example`:
+Las cinco variables de compilación están en [la plantilla](.env.example).
+Configúralas en el entorno de build de Amplify. La [guía AWS](README.AWS.md)
+describe la URL de API Gateway, la URI SPA existente y la reescritura de rutas.
 
-```env
-VITE_AZURE_TENANT_ID=YOUR_TENANT_ID
-VITE_AZURE_CLIENT_ID=YOUR_FRONTEND_CLIENT_ID
-VITE_AZURE_API_SCOPE=api://YOUR_API_CLIENT_ID/access_as_user
-VITE_AZURE_REDIRECT_URI=http://localhost:5173
-VITE_API_BASE_URL=https://YOUR_API_GATEWAY_ID.execute-api.YOUR_REGION.amazonaws.com
-```
+## Despliegue en Amplify
 
-El archivo `.env` no debe subirse al repositorio.
-
-## Ejecución local
-
-```bash
-npm install
-npm run dev
-```
-
-Por defecto Vite levanta la aplicación en `http://localhost:5173`.
+[amplify.yml](amplify.yml) selecciona Node.js 22, ejecuta `npm ci` y
+`npm run build` y publica `dist`.
 
 ## Validaciones del proyecto
 

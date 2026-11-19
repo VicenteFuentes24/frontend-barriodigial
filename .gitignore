@@ -37,3 +37,12 @@ dist-ssr
 .erlang.cookie
 *.erlang.cookie
 secrets/
+
+# Archivos privados de despliegue
+*.env
+!.env.*.example
+passwords/
+credentials/
+.aws/
+ngrok.yml
+ngrok.yaml

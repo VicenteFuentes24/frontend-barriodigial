@@ -8,12 +8,11 @@ import {
   type SilentRequest,
 } from '@azure/msal-browser';
 
-const tenantId = import.meta.env.VITE_AZURE_TENANT_ID?.trim() ?? '';
-const clientId = import.meta.env.VITE_AZURE_CLIENT_ID?.trim() ?? '';
-const apiScope = import.meta.env.VITE_AZURE_API_SCOPE?.trim() ?? '';
-const redirectUri =
-  import.meta.env.VITE_AZURE_REDIRECT_URI?.trim() ?? window.location.origin;
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
+const tenantId = import.meta.env.VITE_AZURE_TENANT_ID;
+const clientId = import.meta.env.VITE_AZURE_CLIENT_ID;
+const apiScope = import.meta.env.VITE_AZURE_API_SCOPE;
+const redirectUri = import.meta.env.VITE_AZURE_REDIRECT_URI;
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export const azureConfig = {
   tenantId,
@@ -21,15 +20,12 @@ export const azureConfig = {
   apiScope,
   redirectUri,
   apiBaseUrl,
-  isConfigured: Boolean(tenantId && clientId && apiScope && apiBaseUrl),
 };
 
 export const msalConfig: Configuration = {
   auth: {
-    clientId: clientId || 'missing-client-id',
-    authority: tenantId
-      ? 'https://login.microsoftonline.com/' + tenantId
-      : 'https://login.microsoftonline.com/common',
+    clientId,
+    authority: 'https://login.microsoftonline.com/' + tenantId,
     redirectUri,
   },
   cache: {
@@ -44,13 +40,13 @@ export const msalConfig: Configuration = {
 };
 
 export const loginRequest: RedirectRequest = {
-  scopes: apiScope ? [apiScope] : [],
+  scopes: [apiScope],
 };
 
 export function getApiTokenRequest(account: AccountInfo): SilentRequest {
   return {
     account,
-    scopes: apiScope ? [apiScope] : [],
+    scopes: [apiScope],
   };
 }
 
